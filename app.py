@@ -1,5 +1,6 @@
 import streamlit as st
 from openai import OpenAI
+import base64
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
@@ -39,24 +40,6 @@ def generate_pre_summary(prompt, outline):
     pre_summary = response.choices[0].message.content.strip()
     return pre_summary
 
-def check_pre_summary(pre_summary):
-    messages = [
-        {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-        {"role": "user", "content": f"Evaluate the following pre-summary for a book and provide feedback on its quality, coherence, and potential improvements: \n\n{pre_summary}"}
-    ]
-
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=messages,
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.7
-    )
-
-    feedback = response.choices[0].message.content.strip()
-    return feedback
-
 def generate_chapters(prompt, outline, pre_summary):
     chapters = []
     previous_chapter_content = ""
@@ -85,6 +68,11 @@ def generate_chapters(prompt, outline, pre_summary):
 
     return "\n\n".join(chapters)
 
+def download_file(file_content, file_name):
+    b64 = base64.b64encode(file_content.encode()).decode()
+    href = f'<a href="data:file/txt;base64,{b64}" download="{file_name}">Download {file_name}</a>'
+    return href
+
 def main():
     st.title("Book Generation App")
 
@@ -92,6 +80,7 @@ def main():
 
     outline = None
     pre_summary = None
+    full_book = None
 
     if st.button("Generate Outline"):
         outline = generate_outline(prompt)
@@ -106,21 +95,17 @@ def main():
             st.write("Pre-Summary:")
             st.write(pre_summary)
 
-    if st.button("Check Pre-Summary"):
-        if pre_summary is None:
-            st.warning("Please generate a pre-summary first.")
-        else:
-            feedback = check_pre_summary(pre_summary)
-            st.write("Feedback on Pre-Summary:")
-            st.write(feedback)
-
     if st.button("Generate Chapters"):
         if outline is None or pre_summary is None:
             st.warning("Please generate an outline and pre-summary first.")
         else:
             chapters = generate_chapters(prompt, outline, pre_summary)
+            full_book = chapters
             st.write("Chapters:")
             st.write(chapters)
+
+    if full_book is not None:
+        st.markdown(download_file(full_book, "book.txt"), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
