@@ -87,13 +87,10 @@ def main():
         st.write("Outline:")
         st.write(outline)
 
-    if st.button("Generate Pre-Summary"):
-        if outline is None:
-            st.warning("Please generate an outline first.")
-        else:
-            pre_summary = generate_pre_summary(prompt, outline)
-            st.write("Pre-Summary:")
-            st.write(pre_summary)
+    if outline is not None and st.button("Generate Pre-Summary"):
+        pre_summary = generate_pre_summary(prompt, outline)
+        st.write("Pre-Summary:")
+        st.write(pre_summary)
 
     if st.button("Generate Chapters"):
         if outline is None or pre_summary is None:
@@ -108,3 +105,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
