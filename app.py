@@ -78,34 +78,27 @@ def main():
 
     prompt = st.text_area("Enter the book prompt:", height=200)
 
-    outline = None
-    pre_summary = None
-    full_book = None
-
     if st.button("Generate Outline"):
         outline = generate_outline(prompt)
         st.write("Outline:")
         st.write(outline)
 
-    if st.button("Generate Pre-Summary"):
-        if outline is None:
-            st.warning("Please generate an outline first.")
-        else:
-            pre_summary = generate_pre_summary(prompt, outline)
+    if "outline" in st.session_state:
+        if st.button("Generate Pre-Summary"):
+            pre_summary = generate_pre_summary(prompt, st.session_state["outline"])
             st.write("Pre-Summary:")
             st.write(pre_summary)
+            st.session_state["pre_summary"] = pre_summary
 
-    if st.button("Generate Chapters"):
-        if outline is None or pre_summary is None:
-            st.warning("Please generate an outline and pre-summary first.")
-        else:
-            chapters = generate_chapters(prompt, outline, pre_summary)
-            full_book = chapters
+    if "pre_summary" in st.session_state:
+        if st.button("Generate Chapters"):
+            chapters = generate_chapters(prompt, st.session_state["outline"], st.session_state["pre_summary"])
             st.write("Chapters:")
             st.write(chapters)
+            st.session_state["full_book"] = chapters
 
-    if full_book is not None:
-        st.markdown(download_file(full_book, "book.txt"), unsafe_allow_html=True)
+    if "full_book" in st.session_state:
+        st.markdown(download_file(st.session_state["full_book"], "book.txt"), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
