@@ -52,7 +52,7 @@ def download_file(file_content, file_name):
 
 def main():
     st.title("Book Generation App")
-    prompt = st.text_area("Enter the book prompt:", height=200)
+    prompt = st.text_area("Enter the book prompt:", height=200, key="prompt_input")  # Add a unique key
     outline = None
     pre_summary = None
     full_book = None
@@ -96,10 +96,6 @@ def main():
 
     if full_book is not None:
         st.markdown(download_file(full_book, "book.txt"), unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()
-
 
 if __name__ == "__main__":
     main()
