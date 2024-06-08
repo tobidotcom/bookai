@@ -83,12 +83,17 @@ def main():
     full_book = None
 
     if st.button("Generate Outline"):
-        outline = generate_outline(prompt)
-        st.write("Outline:")
-        st.write(outline)
+        if prompt.strip():  # Check if prompt is not empty
+            outline = generate_outline(prompt)
+            st.write("Outline:")
+            st.write(outline)
+        else:
+            st.warning("Please enter a book prompt first.")
 
     if st.button("Generate Pre-Summary"):
-        if outline is None:
+        if not prompt.strip():  # Check if prompt is empty
+            st.warning("Please enter a book prompt first.")
+        elif outline is None:
             st.warning("Please generate an outline first.")
         else:
             pre_summary = generate_pre_summary(prompt, outline)
@@ -96,7 +101,9 @@ def main():
             st.write(pre_summary)
 
     if st.button("Generate Chapters"):
-        if outline is None or pre_summary is None:
+        if not prompt.strip():  # Check if prompt is empty
+            st.warning("Please enter a book prompt first.")
+        elif outline is None or pre_summary is None:
             st.warning("Please generate an outline and pre-summary first.")
         else:
             chapters = generate_chapters(prompt, outline, pre_summary)
