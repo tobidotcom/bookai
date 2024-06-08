@@ -5,7 +5,7 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def generate_outline(prompt):
     response = client.Completion.create(
-        engine="text-davinci-003",
+        engine="gpt-4o",
         prompt=f"Based on the following book prompt, generate an outline for the book: \n\n{prompt}\n\nOutline:",
         max_tokens=1024,
         n=1,
@@ -17,7 +17,7 @@ def generate_outline(prompt):
 
 def generate_pre_summary(prompt, outline):
     response = client.Completion.create(
-        engine="text-davinci-003",
+        engine="gpt-4o",
         prompt=f"Based on the following book prompt and outline, generate a pre-summary for the book: \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary:",
         max_tokens=1024,
         n=1,
@@ -29,7 +29,7 @@ def generate_pre_summary(prompt, outline):
 
 def check_pre_summary(pre_summary):
     response = client.Completion.create(
-        engine="text-davinci-003",
+        engine="gpt-4o",
         prompt=f"Evaluate the following pre-summary for a book and provide feedback on its quality, coherence, and potential improvements: \n\n{pre_summary}",
         max_tokens=1024,
         n=1,
@@ -47,7 +47,7 @@ def generate_chapters(prompt, outline, pre_summary):
             chapter_content = ""
             while len(chapter_content) < 1000:  # Adjust the desired minimum length
                 response = client.Completion.create(
-                    engine="text-davinci-003",
+                    engine="gpt-4o",
                     prompt=f"Based on the following book prompt, outline, pre-summary, and previous chapter content, generate the content for the chapter titled '{chapter_title}': \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary: {pre_summary}\n\nPrevious Chapter Content: {previous_chapter_content}\n\nChapter Content: {chapter_content}",
                     max_tokens=1024,
                     n=1,
