@@ -5,40 +5,10 @@ import base64
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def generate_outline(prompt):
-    messages = [
-        {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-        {"role": "user", "content": f"Based on the following book prompt, generate a comprehensive outline for the book: \n\n{prompt}\n\nOutline:"}
-    ]
-
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=messages,
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.7
-    )
-
-    outline = response.choices[0].message.content.strip()
-    return outline
+    # ... (same as before) ...
 
 def generate_pre_summary(prompt, outline):
-    messages = [
-        {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-        {"role": "user", "content": f"Based on the following book prompt and outline, craft a compelling pre-summary for the book: \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary:"}
-    ]
-
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=messages,
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.7
-    )
-
-    pre_summary = response.choices[0].message.content.strip()
-    return pre_summary
+    # ... (same as before) ...
 
 def generate_chapters(prompt, outline, pre_summary):
     chapters = []
@@ -96,10 +66,9 @@ def main():
         if outline is None or pre_summary is None:
             st.warning("Please generate an outline and pre-summary first.")
         else:
-            chapters = generate_chapters(prompt, outline, pre_summary)
-            full_book = chapters
+            full_book = generate_chapters(prompt, outline, pre_summary)
             st.write("Chapters:")
-            st.write(chapters)
+            st.write(full_book)
 
     if full_book is not None:
         st.markdown(download_file(full_book, "book.txt"), unsafe_allow_html=True)
