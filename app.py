@@ -78,12 +78,14 @@ def main():
 
     prompt = st.text_area("Enter the book prompt:", height=200)
 
+    outline = None
+    pre_summary = None
+    full_book = None
+
     if st.button("Generate Outline"):
         outline = generate_outline(prompt)
         st.write("Outline:")
         st.write(outline)
-    else:
-        outline = None
 
     if st.button("Generate Pre-Summary"):
         if outline is None:
@@ -92,8 +94,6 @@ def main():
             pre_summary = generate_pre_summary(prompt, outline)
             st.write("Pre-Summary:")
             st.write(pre_summary)
-    else:
-        pre_summary = None
 
     if st.button("Generate Chapters"):
         if outline is None or pre_summary is None:
@@ -105,9 +105,6 @@ def main():
 
     if full_book is not None:
         st.markdown(download_file(full_book, "book.txt"), unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()
 
 if __name__ == "__main__":
     main()
