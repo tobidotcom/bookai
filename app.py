@@ -78,19 +78,22 @@ def main():
 
     prompt = st.text_area("Enter the book prompt:", height=200)
 
-    outline = None
-    pre_summary = None
-    full_book = None
-
     if st.button("Generate Outline"):
         outline = generate_outline(prompt)
         st.write("Outline:")
         st.write(outline)
+    else:
+        outline = None
 
-    if st.button("Generate Pre-Summary", disabled=outline is None):
-        pre_summary = generate_pre_summary(prompt, outline)
-        st.write("Pre-Summary:")
-        st.write(pre_summary)
+    if st.button("Generate Pre-Summary"):
+        if outline is None:
+            st.warning("Please generate an outline first.")
+        else:
+            pre_summary = generate_pre_summary(prompt, outline)
+            st.write("Pre-Summary:")
+            st.write(pre_summary)
+    else:
+        pre_summary = None
 
     if st.button("Generate Chapters"):
         if outline is None or pre_summary is None:
