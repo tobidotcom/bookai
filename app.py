@@ -14,7 +14,7 @@ def generate_outline(prompt):
 
     response = client.chat.completions.create(model="gpt-3.5-turbo",
     messages=messages,
-    max_tokens=1024,
+    max_tokens=256,
     n=1,
     stop=None,
     temperature=0.7)
@@ -30,7 +30,7 @@ def generate_pre_summary(prompt, outline):
 
     response = client.chat.completions.create(model="gpt-3.5-turbo",
     messages=messages,
-    max_tokens=1024,
+    max_tokens=256,
     n=1,
     stop=None,
     temperature=0.7)
@@ -42,27 +42,26 @@ def generate_chapters(prompt, outline, pre_summary):
     full_book = ""
     previous_chapter_content = ""
     chapter_titles = re.split(r'Chapter\s*\d*:\s*', outline)
+    chapter_titles = [title.strip() for title in chapter_titles if title.strip()]
 
-    for chapter_title in chapter_titles:
-        if chapter_title.strip():
-            chapter_title = chapter_title.strip()
-            messages = [
-                {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-                {"role": "user", "content": f"Based on the following book prompt, outline, pre-summary, and previous chapter content, generate a very concise chapter for a short ebook of around 10-15 pages titled '{chapter_title}': \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary: {pre_summary}\n\nPrevious Chapter Content: {previous_chapter_content}\n\nChapter Content:"}
-            ]
+    for i, chapter_title in enumerate(chapter_titles, start=1):
+        messages = [
+            {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
+            {"role": "user", "content": f"Based on the following book prompt, outline, pre-summary, and previous chapter content, generate a very concise chapter for a short ebook of around 10-15 pages titled '{chapter_title}': \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary: {pre_summary}\n\nPrevious Chapter Content: {previous_chapter_content}\n\nChapter {i} Content:"}
+        ]
 
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=messages,
-                max_tokens=1024,
-                n=1,
-                stop=None,
-                temperature=0.7
-            )
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=256,
+            n=1,
+            stop=None,
+            temperature=0.7
+        )
 
-            chapter_content = response.choices[0].message.content
-            full_book += f"Chapter Title: {chapter_title}\n\n{chapter_content}\n\n"
-            previous_chapter_content = chapter_content
+        chapter_content = response.choices[0].message.content
+        full_book += f"Chapter {i}: {chapter_title}\n\n{chapter_content}\n\n"
+        previous_chapter_content = chapter_content
 
     return full_book
 
@@ -97,6 +96,9 @@ def app():
             st.write("Outline:")
             st.write(st.session_state.outline)
 
+    if st.session_state.outline is not in st.session_state:
+        st.session_state.pre_summary = None
+
     if st.session_state.outline is not None and st.button("Generate Pre-Summary"):
         with st.spinner("Generating pre-summary..."):
             st.session_state.pre_summary = generate_pre_summary(prompt, st.session_state.outline)
@@ -115,4 +117,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
