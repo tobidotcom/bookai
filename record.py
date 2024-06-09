@@ -143,8 +143,7 @@ def generate_speech(text, speaker_file):
     output = client.run("lucataco/xtts-v2:684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e", input=input)
     return output
 
-def upload_audio():
-    audio_file = st.file_uploader("Upload recorded audio:", type=["wav"])
+def upload_audio(audio_file):
     if audio_file:
         # Process the uploaded audio file
         with contextlib.closing(wave.open(audio_file, 'r')) as wav:
@@ -152,11 +151,6 @@ def upload_audio():
             rate = wav.getframerate()
             duration = wav.getnframes() / float(rate)
             st.write(f"Audio file duration: {duration:.2f} seconds")
-
-            # You can add additional processing logic here, such as:
-            # - Save the audio file to disk
-            # - Send the audio file to a speech recognition service
-            # - Perform audio analysis or processing
 
             # Save the audio file to disk
             audio_file_path = os.path.join("audio_files", "recorded_audio.wav")
@@ -233,8 +227,10 @@ def app():
             </script>
         """)
 
-    # Add the route to handle the uploaded audio file
-    st.add_route("/upload_audio", upload_audio)
+    # Handle the uploaded audio file
+    uploaded_audio = st.file_uploader("Upload recorded audio:", type=["wav"])
+    if uploaded_audio:
+        upload_audio(uploaded_audio)
 
     if st.button("Stop Recording"):
         components.html("""
@@ -242,20 +238,7 @@ def app():
                 window.dispatchEvent(new Event('streamlitRecorderStop'));
                 const audioBlob = new Blob([recordedData], { type: 'audio/wav' });
                 const audioFile = new File([audioBlob], 'recorded_audio.wav', { type: 'audio/wav' });
-                const formData = new FormData();
-                formData.append('audio_file', audioFile);
-
-                fetch('/upload_audio', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Audio file uploaded:', data);
-                })
-                .catch(error => {
-                    console.error('Error uploading audio file:', error);
-                });
+                upload_audio(audioFile);
             </script>
         """)
 
