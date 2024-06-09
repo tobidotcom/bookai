@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import base64
 import pdfkit
+import tempfile
 from fpdf import FPDF
 from replicate import Client
 from openai import OpenAI
@@ -82,9 +83,13 @@ def generate_chapters(prompt, outline, pre_summary):
     return "\n\n".join(chapters)
 
 def generate_pdf(file_content, file_name):
-    html_content = f"<pre>{file_content}</pre>"
-    pdfkit.from_string(html_content, f"{file_name}.pdf")
-    return f"{file_name}.pdf"
+    with tempfile.NamedTemporaryFile(mode="w+", suffix=".html", delete=False) as temp_file:
+        temp_file.write(f"<pre>{file_content}</pre>")
+        temp_file_path = temp_file.name
+
+    pdf_file_path = f"{file_name}.pdf"
+    pdfkit.from_file(temp_file_path, pdf_file_path)
+    return pdf_file_path
 
 def app():
     st.title("Book Generation App")
