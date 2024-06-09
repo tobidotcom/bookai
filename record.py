@@ -167,10 +167,6 @@ def upload_audio():
 
         st.success("Audio file uploaded and processed successfully!")
 
-# Add the new route to handle the uploaded audio file
-app = st.create_root()
-app.add_route("/upload_audio", upload_audio)
-
 def app():
     st.title("Book Generation App")
 
@@ -236,6 +232,9 @@ def app():
                 window.dispatchEvent(new Event('streamlitRecorderReady'));
             </script>
         """)
+
+    # Add the route to handle the uploaded audio file
+    st.add_route("/upload_audio", upload_audio)
 
     if st.button("Stop Recording"):
         components.html("""
