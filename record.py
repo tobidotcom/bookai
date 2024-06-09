@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import os
 import base64
 import io
@@ -8,37 +7,7 @@ from replicate import Client
 from openai import OpenAI
 import wave
 import contextlib
-
-# Load the recorder.js script
-recorder_script = """
-    <script src="https://cdn.jsdelivr.net/npm/recorder-js@1.0.7/recorder.js"></script>
-    <script>
-        var recorder;
-        var recordedData;
-
-        function startRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(function(stream) {
-                    recorder = new Recorder(stream, { numChannels: 2 });
-                    recorder.record();
-                })
-                .catch(function(err) {
-                    console.log("Error: " + err);
-                });
-        }
-
-        function stopRecording() {
-            recorder.stop();
-            recordedData = recorder.exportWAV(true);
-            recorder.stream.getTracks().forEach(function(track) {
-                track.stop();
-            });
-        }
-
-        window.addEventListener('streamlitRecorderReady', startRecording);
-        window.addEventListener('streamlitRecorderStop', stopRecording);
-    </script>
-"""
+from pydub import AudioSegment
 
 # Get the Replicate API token from the environment variable
 replicate_api_token = os.environ.get("REPLICATE_API_TOKEN")
@@ -46,6 +15,7 @@ replicate_api_token = os.environ.get("REPLICATE_API_TOKEN")
 # Create an instance of Replicate with the API token
 client = Client(replicate_api_token)
 openai_client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
 
 def generate_outline(prompt):
     messages = [
@@ -134,30 +104,46 @@ def generate_pdf(file_content, file_name):
     href = f'<a href="data:application/pdf;base64,{b64}" download="{file_name}.pdf">Download {file_name}.pdf</a>'
     return href
 
-def generate_speech(text, speaker_file):
-    input = {
-        "text": text,
-        "speaker": speaker_file
-    }
-
-    output = client.run("lucataco/xtts-v2:684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e", input=input)
-    return output
-
 def upload_audio(audio_file):
     if audio_file:
         # Process the uploaded audio file
-        with contextlib.closing(wave.open(audio_file, 'r')) as wav:
-            frames = wav.readframes(wav.getnframes())
-            rate = wav.getframerate()
-            duration = wav.getnframes() / float(rate)
-            st.write(f"Audio file duration: {duration:.2f} seconds")
+        if audio_file.type == "audio/wav":
+            with contextlib.closing(wave.open(audio_file, 'r')) as wav:
+                frames = wav.readframes(wav.getnframes())
+                rate = wav.getframerate()
+                duration = wav.getnframes() / float(rate)
+                st.write(f"Audio file duration: {duration:.2f} seconds")
 
-            # Save the audio file to disk
-            audio_file_path = os.path.join("audio_files", "recorded_audio.wav")
-            os.makedirs("audio_files", exist_ok=True)
-            with open(audio_file_path, "wb") as f:
-                f.write(audio_file.getvalue())
-            st.write(f"Audio file saved to: {audio_file_path}")
+                # Save the audio file to disk
+                audio_file_path = os.path.join("audio_files", "recorded_audio.wav")
+                os.makedirs("audio_files", exist_ok=True)
+                with open(audio_file_path, "wb") as f:
+                    f.write(audio_file.getvalue())
+                st.write(f"Audio file saved to: {audio_file_path}")
+
+        elif audio_file.type == "audio/mpeg":
+            # Convert MP3 to WAV
+            audio_data = AudioSegment.from_file(audio_file, format="mp3")
+            wav_file = io.BytesIO()
+            audio_data.export(wav_file, format="wav")
+            wav_file.seek(0)
+
+            with contextlib.closing(wave.open(wav_file, 'r')) as wav:
+                frames = wav.readframes(wav.getnframes())
+                rate = wav.getframerate()
+                duration = wav.getnframes() / float(rate)
+                st.write(f"Audio file duration: {duration:.2f} seconds")
+
+                # Save the audio file to disk
+                audio_file_path = os.path.join("audio_files", "recorded_audio.wav")
+                os.makedirs("audio_files", exist_ok=True)
+                with open(audio_file_path, "wb") as f:
+                    f.write(wav_file.getvalue())
+                st.write(f"Audio file saved to: {audio_file_path}")
+
+        else:
+            st.warning("Unsupported audio file format. Please upload a WAV or MP3 file.")
+            return
 
         st.success("Audio file uploaded and processed successfully!")
 
@@ -218,29 +204,10 @@ def app():
             output_url = generate_speech(st.session_state.pre_summary, speaker_url)
             st.audio(output_url, format="audio/wav")
 
-    # Load the recorder.js script and add a button to record audio
-    components.html(recorder_script, height=200)
-    if st.button("Record Audio"):
-        components.html("""
-            <script>
-                window.dispatchEvent(new Event('streamlitRecorderReady'));
-            </script>
-        """)
-
-    # Handle the uploaded audio file
-    uploaded_audio = st.file_uploader("Upload recorded audio:", type=["wav"])
+    # Upload audio file
+    uploaded_audio = st.file_uploader("Upload audio file (WAV or MP3):", type=["wav", "mp3"])
     if uploaded_audio:
         upload_audio(uploaded_audio)
-
-    if st.button("Stop Recording"):
-        components.html("""
-            <script>
-                window.dispatchEvent(new Event('streamlitRecorderStop'));
-                const audioBlob = new Blob([recordedData], { type: 'audio/wav' });
-                const audioFile = new File([audioBlob], 'recorded_audio.wav', { type: 'audio/wav' });
-                upload_audio(audioFile);
-            </script>
-        """)
 
 if __name__ == "__main__":
     app()
