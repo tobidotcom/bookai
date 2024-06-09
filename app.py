@@ -1,83 +1,95 @@
 import streamlit as st
 from openai import OpenAI
+import base64
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-import re
-import base64
-from fpdf import FPDF
 
 def generate_outline(prompt):
     messages = [
         {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-        {"role": "user", "content": f"Based on the following book prompt, generate a very concise outline for a short ebook of around 10-15 pages: \n\n{prompt}\n\nOutline:"}
+        {"role": "user", "content": f"Based on the following book prompt, generate a comprehensive outline for the book: \n\n{prompt}\n\nOutline:"}
     ]
 
-    response = client.chat.completions.create(model="gpt-3.5-turbo",
-    messages=messages,
-    max_tokens=256,
-    n=1,
-    stop=None,
-    temperature=0.7)
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.7,
+        stream=True  # Enable streaming
+    )
 
-    outline = response.choices[0].message.content
-    return outline
+    outline = ""
+    for chunk in response:
+        outline += chunk.choices[0].delta.get("content", "")
+        yield outline  # Yield the current outline for progress bar update
+
+    yield outline  # Yield the final outline
 
 def generate_pre_summary(prompt, outline):
     messages = [
         {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-        {"role": "user", "content": f"Based on the following book prompt and outline, craft a very concise pre-summary for a short ebook of around 10-15 pages: \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary:"}
+        {"role": "user", "content": f"Based on the following book prompt and outline, craft a compelling pre-summary for the book: \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary:"}
     ]
 
-    response = client.chat.completions.create(model="gpt-3.5-turbo",
-    messages=messages,
-    max_tokens=256,
-    n=1,
-    stop=None,
-    temperature=0.7)
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.7,
+        stream=True  # Enable streaming
+    )
 
-    pre_summary = response.choices[0].message.content
-    return pre_summary
+    pre_summary = ""
+    for chunk in response:
+        pre_summary += chunk.choices[0].delta.get("content", "")
+        yield pre_summary  # Yield the current pre-summary for progress bar update
+
+    yield pre_summary  # Yield the final pre-summary
 
 def generate_chapters(prompt, outline, pre_summary):
-    full_book = ""
+    chapters = []
     previous_chapter_content = ""
-    chapter_titles = re.split(r'Chapter\s*\d*:\s*', outline)
-    chapter_titles = [title.strip() for title in chapter_titles if title.strip()]
+    for chapter_title in outline.split("\n"):
+        if chapter_title.strip():
+            chapter_content = ""
+            while True:
+                messages = [
+                    {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
+                    {"role": "user", "content": f"Based on the following book prompt, outline, pre-summary, and previous chapter content, generate the next 500 words for the chapter titled '{chapter_title}': \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary: {pre_summary}\n\nPrevious Chapter Content: {previous_chapter_content}\n\nChapter Content:"}
+                ]
 
-    for i, chapter_title in enumerate(chapter_titles, start=1):
-        messages = [
-            {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-            {"role": "user", "content": f"Based on the following book prompt, outline, pre-summary, and previous chapter content, generate a very concise chapter for a short ebook of around 10-15 pages titled '{chapter_title}': \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary: {pre_summary}\n\nPrevious Chapter Content: {previous_chapter_content}\n\nChapter {i} Content:"}
-        ]
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=messages,
+                    max_tokens=500,
+                    n=1,
+                    stop=None,
+                    temperature=0.7,
+                )
 
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            max_tokens=256,
-            n=1,
-            stop=None,
-            temperature=0.7
-        )
+                new_content = response.choices[0].message.content
+                chapter_content += new_content
+                yield f"Chapter: {chapter_title}\n\n{chapter_content}"  # Yield the current chapter for progress bar update
 
-        chapter_content = response.choices[0].message.content
-        full_book += f"Chapter {i}: {chapter_title}\n\n{chapter_content}\n\n"
-        previous_chapter_content = chapter_content
+                if len(new_content) < 500:  # If the response is shorter than 500 tokens, we've reached the end of the chapter
+                    break
 
-    return full_book
+            chapters.append(f"Chapter: {chapter_title}\n\n{chapter_content}")
+            previous_chapter_content = chapter_content
 
-def generate_pdf(file_content, file_name):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    for line in file_content.split("\n"):
-        pdf.multi_cell(0, 10, txt=line, align="L")
-    pdf_file = pdf.output(f"{file_name}.pdf", "S").encode("latin-1")
-    b64 = base64.b64encode(pdf_file).decode()
-    href = f'<a href="data:application/pdf;base64,{b64}" download="{file_name}.pdf">Download {file_name}.pdf</a>'
+    yield "\n\n".join(chapters)  # Yield the final chapters
+
+def download_file(file_content, file_name):
+    b64 = base64.b64encode(file_content.encode()).decode()
+    href = f'<a href="data:file/txt;base64,{b64}" download="{file_name}">Download {file_name}</a>'
     return href
 
 def app():
-    st.title("Short Ebook Generation App")
+    st.title("Book Generation App")
 
     prompt = st.text_area("Enter the book prompt:", height=200)
 
@@ -92,14 +104,15 @@ def app():
 
     if st.button("Generate Outline"):
         with st.spinner("Generating outline..."):
-            st.session_state.outline = generate_outline(prompt)
-            st.write("Outline:")
-            st.write(st.session_state.outline)
+            for output in generate_outline(prompt):
+                st.session_state.outline = output
+                st.write("Outline:")
+                st.write(st.session_state.outline)
 
-    if st.session_state.outline is not None:
-        if st.button("Generate Pre-Summary"):
-            with st.spinner("Generating pre-summary..."):
-                st.session_state.pre_summary = generate_pre_summary(prompt, st.session_state.outline)
+    if st.session_state.outline is not None and st.button("Generate Pre-Summary"):
+        with st.spinner("Generating pre-summary..."):
+            for output in generate_pre_summary(prompt, st.session_state.outline):
+                st.session_state.pre_summary = output
                 st.write("Pre-Summary:")
                 st.write(st.session_state.pre_summary)
 
@@ -108,10 +121,14 @@ def app():
             st.warning("Please generate an outline and pre-summary first.")
         else:
             with st.spinner("Generating chapters..."):
-                st.session_state.full_book = generate_chapters(prompt, st.session_state.outline, st.session_state.pre_summary)
-                st.write("Full Book:")
-                st.write(st.session_state.full_book)
-                st.markdown(generate_pdf(st.session_state.full_book, "short_ebook"), unsafe_allow_html=True)
+                for output in generate_chapters(prompt, st.session_state.outline, st.session_state.pre_summary):
+                    st.session_state.full_book = output
+                    st.write("Chapters:")
+                    st.write(st.session_state.full_book)
+
+    if st.session_state.full_book is not None:
+        st.markdown(download_file(st.session_state.full_book, "book.txt"), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     app()
+
