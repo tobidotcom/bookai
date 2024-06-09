@@ -49,7 +49,7 @@ def generate_chapters(prompt, outline, pre_summary):
     for chapter_title in outline.split("\n"):
         if chapter_title.strip():
             chapter_content = ""
-            while len(chapter_content) < 1000:  # Adjust the desired minimum length
+            while len(chapter_content) < 200:  # Adjust the minimum length to 200 characters
                 messages = [
                     {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
                     {"role": "user", "content": f"Based on the following book prompt, outline, pre-summary, and previous chapter content, generate the content for the chapter titled '{chapter_title}': \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary: {pre_summary}\n\nPrevious Chapter Content: {previous_chapter_content}\n\nChapter Content: {chapter_content}"}
@@ -80,7 +80,7 @@ def download_file(file_content, file_name):
     for line in file_content.split("\n"):
         pdf.multi_cell(0, 10, txt=line, align="L")
 
-    pdf_bytes = pdf.output(dest="S", codec="UTF-8")  # Use UTF-8 encoding
+    pdf_bytes = pdf.output(dest="S")
     b64 = base64.b64encode(pdf_bytes).decode()
     href = f'<a href="data:application/pdf;base64,{b64}" download="{file_name}">Download {file_name}</a>'
     return href
@@ -105,7 +105,7 @@ def app():
             st.write("Outline:")
             st.write(st.session_state.outline)
 
-    if st.session_state.outline is not None and st.button("Generate Pre-Summary"):
+    if st.session_state.outline is not in st.session_state and st.button("Generate Pre-Summary"):
         with st.spinner("Generating pre-summary..."):
             st.session_state.pre_summary = generate_pre_summary(prompt, st.session_state.outline)
             st.write("Pre-Summary:")
