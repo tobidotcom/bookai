@@ -1,18 +1,18 @@
 import streamlit as st
-from replicate import Replicate
 import os
 import base64
 from fpdf import FPDF
+from replicate import Client
 
 # Get the Replicate API token from the environment variable
 replicate_api_token = os.environ.get("REPLICATE_API_TOKEN")
 
 # Create an instance of Replicate with the API token
-replicate = Replicate(replicate_api_token)
+client = Client(replicate_api_token)
 
 from openai import OpenAI
 
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+openai_client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def generate_outline(prompt):
     messages = [
@@ -20,7 +20,7 @@ def generate_outline(prompt):
         {"role": "user", "content": f"Based on the following book prompt, generate a comprehensive outline for the book: \n\n{prompt}\n\nOutline:"}
     ]
 
-    response = client.chat.completions.create(
+    response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo-0125",
         messages=messages,
         max_tokens=1024,
@@ -39,7 +39,7 @@ def generate_pre_summary(prompt, outline):
         {"role": "user", "content": f"Based on the following book prompt and outline, craft a compelling pre-summary for the book: \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary:"}
     ]
 
-    response = client.chat.completions.create(
+    response = openai_client.chat.completions.create(
         model="gpt-3.5-turbo-0125",
         messages=messages,
         max_tokens=1024,
@@ -64,7 +64,7 @@ def generate_chapters(prompt, outline, pre_summary):
                     {"role": "user", "content": f"Based on the following book prompt, outline, pre-summary, and previous chapter content, generate the content for the chapter titled '{chapter_title}': \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary: {pre_summary}\n\nPrevious Chapter Content: {previous_chapter_content}\n\nChapter Content: {chapter_content}"}
                 ]
 
-                response = client.chat.completions.create(
+                response = openai_client.chat.completions.create(
                     model="gpt-3.5-turbo-0125",
                     messages=messages,
                     max_tokens=1024,
@@ -99,7 +99,7 @@ def generate_speech(text, speaker_file):
         "speaker": speaker_file
     }
 
-    output = replicate.run("lucataco/xtts-v2:684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e", input=input)
+    output = client.run("lucataco/xtts-v2:684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e", input=input)
     return output
 
 def app():
@@ -147,7 +147,7 @@ def app():
     if st.button("Generate Speech from Text"):
         if text and speaker_file:
             with st.spinner("Generating speech..."):
-                speaker_url = replicate.upload_file(speaker_file)
+                speaker_url = client.upload_file(speaker_file)
                 output_url = generate_speech(text, speaker_url)
                 st.audio(output_url, format="audio/wav")
         else:
@@ -155,7 +155,7 @@ def app():
 
     if st.session_state.pre_summary and st.button("Generate Speech from Pre-Summary"):
         with st.spinner("Generating speech..."):
-            speaker_url = replicate.upload_file(speaker_file)
+            speaker_url = client.upload_file(speaker_file)
             output_url = generate_speech(st.session_state.pre_summary, speaker_url)
             st.audio(output_url, format="audio/wav")
 
