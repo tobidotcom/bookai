@@ -22,7 +22,7 @@ def generate_outline(prompt):
 
     outline = ""
     for chunk in response:
-        outline += chunk.choices[0].delta.get("content", "")
+        outline += chunk.choices[0].delta.content  # Access the content directly
         yield outline  # Yield the current outline for progress bar update
 
     yield outline  # Yield the final outline
@@ -45,7 +45,7 @@ def generate_pre_summary(prompt, outline):
 
     pre_summary = ""
     for chunk in response:
-        pre_summary += chunk.choices[0].delta.get("content", "")
+        pre_summary += chunk.choices[0].delta.content  # Access the content directly
         yield pre_summary  # Yield the current pre-summary for progress bar update
 
     yield pre_summary  # Yield the final pre-summary
@@ -73,7 +73,7 @@ def generate_chapters(prompt, outline, pre_summary):
                 )
 
                 for chunk in response:
-                    chapter_content += chunk.choices[0].delta.get("content", "")
+                    chapter_content += chunk.choices[0].delta.content  # Access the content directly
                     yield f"Chapter: {chapter_title}\n\n{chapter_content}"  # Yield the current chapter for progress bar update
 
             chapters.append(f"Chapter: {chapter_title}\n\n{chapter_content}")
