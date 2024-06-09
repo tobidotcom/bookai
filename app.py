@@ -14,7 +14,7 @@ def generate_outline(prompt):
 
     response = client.chat.completions.create(model="gpt-3.5-turbo",
     messages=messages,
-    max_tokens=256,
+    max_tokens=1024,
     n=1,
     stop=None,
     temperature=0.7)
@@ -30,7 +30,7 @@ def generate_pre_summary(prompt, outline):
 
     response = client.chat.completions.create(model="gpt-3.5-turbo",
     messages=messages,
-    max_tokens=256,
+    max_tokens=1024,
     n=1,
     stop=None,
     temperature=0.7)
@@ -54,7 +54,7 @@ def generate_chapters(prompt, outline, pre_summary):
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages,
-                max_tokens=256,
+                max_tokens=1024,
                 n=1,
                 stop=None,
                 temperature=0.7
