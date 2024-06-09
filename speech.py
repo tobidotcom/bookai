@@ -1,5 +1,5 @@
 import streamlit as st
-import replicate
+from replicate import Replicate
 import os
 import base64
 from fpdf import FPDF
