@@ -80,8 +80,8 @@ def download_file(file_content, file_name):
     for line in file_content.split("\n"):
         pdf.multi_cell(0, 10, txt=line, align="L")
 
-    pdf_bytes = pdf.output(dest="S")  # Remove the .encode("latin-1") part
-    b64 = base64.b64encode(pdf_bytes).decode()
+    pdf_bytes = pdf.output(dest="S")  # Generate PDF bytes
+    b64 = base64.b64encode(pdf_bytes).decode()  # Encode PDF bytes to base64
     href = f'<a href="data:application/pdf;base64,{b64}" download="{file_name}">Download {file_name}</a>'
     return href
 
