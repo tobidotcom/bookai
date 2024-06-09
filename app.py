@@ -6,7 +6,6 @@ import re
 import base64
 from fpdf import FPDF
 
-
 def generate_outline(prompt):
     messages = [
         {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
@@ -48,16 +47,18 @@ def generate_chapters(prompt, outline, pre_summary):
         if chapter_title.strip():
             chapter_title = chapter_title.strip()
             messages = [
-                {"role": "system", "content": "You are an expert book writer..."},
+                {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
                 {"role": "user", "content": f"Based on the following book prompt, outline, pre-summary, and previous chapter content, generate a very concise chapter for a short ebook of around 10-15 pages titled '{chapter_title}': \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary: {pre_summary}\n\nPrevious Chapter Content: {previous_chapter_content}\n\nChapter Content:"}
             ]
 
-            response = client.chat.completions.create(model="gpt-3.5-turbo",
-            messages=messages,
-            max_tokens=256,
-            n=1,
-            stop=None,
-            temperature=0.7)
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=messages,
+                max_tokens=256,
+                n=1,
+                stop=None,
+                temperature=0.7
+            )
 
             chapter_content = response.choices[0].message.content
             full_book += f"Chapter Title: {chapter_title}\n\n{chapter_content}\n\n"
@@ -114,3 +115,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
