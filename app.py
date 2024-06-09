@@ -105,14 +105,14 @@ def app():
             st.write("Outline:")
             st.write(st.session_state.outline)
 
-    if st.session_state.outline is not in st.session_state and st.button("Generate Pre-Summary"):
+    if "outline" in st.session_state and st.session_state.outline is not None and st.button("Generate Pre-Summary"):
         with st.spinner("Generating pre-summary..."):
             st.session_state.pre_summary = generate_pre_summary(prompt, st.session_state.outline)
             st.write("Pre-Summary:")
             st.write(st.session_state.pre_summary)
 
     if st.button("Generate Chapters"):
-        if st.session_state.outline is None or st.session_state.pre_summary is None:
+        if "outline" not in st.session_state or st.session_state.outline is None or "pre_summary" not in st.session_state or st.session_state.pre_summary is None:
             st.warning("Please generate an outline and pre-summary first.")
         else:
             with st.spinner("Generating chapters..."):
