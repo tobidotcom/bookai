@@ -3,15 +3,13 @@ import os
 import base64
 from fpdf import FPDF
 from replicate import Client
+from openai import OpenAI
 
 # Get the Replicate API token from the environment variable
 replicate_api_token = os.environ.get("REPLICATE_API_TOKEN")
 
 # Create an instance of Replicate with the API token
 client = Client(replicate_api_token)
-
-from openai import OpenAI
-
 openai_client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def generate_outline(prompt):
@@ -161,3 +159,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
