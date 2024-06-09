@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import base64
+import io
 from fpdf import FPDF
 from replicate import Client
 from openai import OpenAI
@@ -86,7 +87,15 @@ def generate_pdf(file_content, file_name):
     pdf.set_font("Arial", size=12)
     for line in file_content.split("\n"):
         pdf.multi_cell(0, 10, txt=line, align="L")
-    pdf_file = pdf.output(f"{file_name}.pdf", "S").encode("latin-1")
+    
+    # Create a BytesIO object to hold the PDF file
+    pdf_bytes = io.BytesIO()
+    pdf.output(pdf_bytes)
+    
+    # Get the PDF file content as bytes
+    pdf_file = pdf_bytes.getvalue()
+    
+    # Encode the PDF file content as base64
     b64 = base64.b64encode(pdf_file).decode()
     href = f'<a href="data:application/pdf;base64,{b64}" download="{file_name}.pdf">Download {file_name}.pdf</a>'
     return href
