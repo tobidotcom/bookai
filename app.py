@@ -73,16 +73,15 @@ def generate_chapters(prompt, outline, pre_summary):
 
     return "\n\n".join(chapters)
 
-def download_file(file_content, file_name):
+def generate_pdf(file_content, file_name):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
     for line in file_content.split("\n"):
         pdf.multi_cell(0, 10, txt=line, align="L")
-
-    pdf_bytes = pdf.output(dest="S")
-    b64 = base64.b64encode(pdf_bytes).decode()
-    href = f'<a href="data:application/pdf;base64,{b64}" download="{file_name}">Download {file_name}</a>'
+    pdf_file = pdf.output(f"{file_name}.pdf", "S").encode("latin-1")
+    b64 = base64.b64encode(pdf_file).decode()
+    href = f'<a href="data:application/pdf;base64,{b64}" download="{file_name}.pdf">Download {file_name}.pdf</a>'
     return href
 
 def app():
@@ -121,7 +120,7 @@ def app():
                 st.write(st.session_state.full_book)
 
     if st.session_state.full_book is not None:
-        st.markdown(download_file(st.session_state.full_book, "book.pdf"), unsafe_allow_html=True)
+        st.markdown(generate_pdf(st.session_state.full_book, "book"), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     app()
