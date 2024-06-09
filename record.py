@@ -2,8 +2,6 @@ import streamlit as st
 import os
 import base64
 import io
-import pyaudio
-import wave
 from fpdf import FPDF
 from replicate import Client
 from openai import OpenAI
@@ -111,32 +109,6 @@ def generate_speech(text, speaker_file):
     output = client.run("lucataco/xtts-v2:684bc3855b37866c0c65add2ff39c78f3dea3f4ff103a436465326e0f438d55e", input=input)
     return output
 
-def record_audio(duration=10):
-    chunk = 1024
-    sample_format = pyaudio.paInt16
-    channels = 1
-    fs = 44100
-
-    p = pyaudio.PyAudio()
-
-    stream = p.open(format=sample_format,
-                    channels=channels,
-                    rate=fs,
-                    frames_per_buffer=chunk,
-                    input=True)
-
-    frames = []
-
-    for _ in range(0, int(fs / chunk * duration)):
-        data = stream.read(chunk)
-        frames.append(data)
-
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-
-    return b''.join(frames)
-
 def app():
     st.title("Book Generation App")
 
@@ -179,15 +151,6 @@ def app():
     text = st.text_area("Enter the text you want to convert to speech:")
     speaker_file = st.file_uploader("Upload the speaker file (WAV format):", type=["wav"])
 
-    if st.button("Record Audio"):
-        with st.spinner("Recording audio..."):
-            recorded_audio = record_audio()
-
-            # Process the recorded audio data
-            # For example, you can pass it to the generate_speech function
-            output_url = generate_speech(recorded_audio, speaker_file)
-            st.audio(output_url, format="audio/wav")
-
     if st.button("Generate Speech from Text"):
         if text and speaker_file:
             with st.spinner("Generating speech..."):
@@ -205,3 +168,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
