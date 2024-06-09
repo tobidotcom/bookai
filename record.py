@@ -1,10 +1,42 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import os
 import base64
 import io
 from fpdf import FPDF
 from replicate import Client
 from openai import OpenAI
+
+# Load the recorder.js script
+recorder_script = """
+    <script src="https://cdn.jsdelivr.net/npm/recorder-js@1.0.7/recorder.js"></script>
+    <script>
+        var recorder;
+        var recordedData;
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    recorder = new Recorder(stream, { numChannels: 2 });
+                    recorder.record();
+                })
+                .catch(function(err) {
+                    console.log("Error: " + err);
+                });
+        }
+
+        function stopRecording() {
+            recorder.stop();
+            recordedData = recorder.exportWAV(true);
+            recorder.stream.getTracks().forEach(function(track) {
+                track.stop();
+            });
+        }
+
+        window.addEventListener('streamlitRecorderReady', startRecording);
+        window.addEventListener('streamlitRecorderStop', stopRecording);
+    </script>
+"""
 
 # Get the Replicate API token from the environment variable
 replicate_api_token = os.environ.get("REPLICATE_API_TOKEN")
@@ -165,6 +197,9 @@ def app():
             speaker_url = client.upload_file(speaker_file)
             output_url = generate_speech(st.session_state.pre_summary, speaker_url)
             st.audio(output_url, format="audio/wav")
+
+    # Load the recorder.js script
+    components.html(recorder_script, height=200)
 
 if __name__ == "__main__":
     app()
