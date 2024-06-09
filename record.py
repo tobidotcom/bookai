@@ -6,6 +6,8 @@ import io
 from fpdf import FPDF
 from replicate import Client
 from openai import OpenAI
+import wave
+import contextlib
 
 # Load the recorder.js script
 recorder_script = """
@@ -198,9 +200,65 @@ def app():
             output_url = generate_speech(st.session_state.pre_summary, speaker_url)
             st.audio(output_url, format="audio/wav")
 
-    # Load the recorder.js script
+    # Load the recorder.js script and add a button to record audio
     components.html(recorder_script, height=200)
+    if st.button("Record Audio"):
+        components.html("""
+            <script>
+                window.dispatchEvent(new Event('streamlitRecorderReady'));
+            </script>
+        """)
+
+    if st.button("Stop Recording"):
+        components.html("""
+            <script>
+                window.dispatchEvent(new Event('streamlitRecorderStop'));
+                const audioBlob = new Blob([recordedData], { type: 'audio/wav' });
+                const audioFile = new File([audioBlob], 'recorded_audio.wav', { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append('audio_file', audioFile);
+
+                fetch('/upload_audio', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Audio file uploaded:', data);
+                })
+                .catch(error => {
+                    console.error('Error uploading audio file:', error);
+                });
+            </script>
+        """)
+
+# Add the new route to handle the uploaded audio file
+def upload_audio():
+    audio_file = st.file_uploader("Upload recorded audio:", type=["wav"])
+    if audio_file:
+        # Process the uploaded audio file
+        with contextlib.closing(wave.open(audio_file, 'r')) as wav:
+            frames = wav.readframes(wav.getnframes())
+            rate = wav.getframerate()
+            duration = wav.getnframes() / float(rate)
+            st.write(f"Audio file duration: {duration:.2f} seconds")
+
+            # You can add additional processing logic here, such as:
+            # - Save the audio file to disk
+            # - Send the audio file to a speech recognition service
+            # - Perform audio analysis or processing
+
+            # Save the audio file to disk
+            audio_file_path = os.path.join("audio_files", "recorded_audio.wav")
+            os.makedirs("audio_files", exist_ok=True)
+            with open(audio_file_path, "wb") as f:
+                f.write(audio_file.getvalue())
+            st.write(f"Audio file saved to: {audio_file_path}")
+
+        st.success("Audio file uploaded and processed successfully!")
+
+app = st.create_root()
+app.add_route("/upload_audio", upload_audio)
 
 if __name__ == "__main__":
     app()
-
