@@ -2,4 +2,3 @@ streamlit
 openai
 fpdf
 replicate
-pydub
