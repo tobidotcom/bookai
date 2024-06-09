@@ -2,3 +2,5 @@ streamlit
 openai
 fpdf
 replicate
+pdfkit
+wkhtmltopdf
