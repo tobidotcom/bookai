@@ -7,7 +7,6 @@ from replicate import Client
 from openai import OpenAI
 import wave
 import contextlib
-from pydub import AudioSegment
 
 # Get the Replicate API token from the environment variable
 replicate_api_token = os.environ.get("REPLICATE_API_TOKEN")
@@ -15,7 +14,6 @@ replicate_api_token = os.environ.get("REPLICATE_API_TOKEN")
 # Create an instance of Replicate with the API token
 client = Client(replicate_api_token)
 openai_client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
 
 def generate_outline(prompt):
     messages = [
@@ -122,23 +120,17 @@ def upload_audio(audio_file):
                 st.write(f"Audio file saved to: {audio_file_path}")
 
         elif audio_file.type == "audio/mpeg":
-            # Convert MP3 to WAV
-            audio_data = AudioSegment.from_file(io.BytesIO(audio_file.read()), format="mp3")
-            wav_file = io.BytesIO()
-            audio_data.export(wav_file, format="wav")
-            wav_file.seek(0)
-
-            with contextlib.closing(wave.open(wav_file, 'r')) as wav:
+            with contextlib.closing(wave.open(audio_file, 'r')) as wav:
                 frames = wav.readframes(wav.getnframes())
                 rate = wav.getframerate()
                 duration = wav.getnframes() / float(rate)
                 st.write(f"Audio file duration: {duration:.2f} seconds")
 
                 # Save the audio file to disk
-                audio_file_path = os.path.join("audio_files", "recorded_audio.wav")
+                audio_file_path = os.path.join("audio_files", "recorded_audio.mp3")
                 os.makedirs("audio_files", exist_ok=True)
                 with open(audio_file_path, "wb") as f:
-                    f.write(wav_file.getvalue())
+                    f.write(audio_file.getvalue())
                 st.write(f"Audio file saved to: {audio_file_path}")
 
         else:
@@ -187,7 +179,7 @@ def app():
 
     # Voice Cloning and Text-to-Speech
     text = st.text_area("Enter the text you want to convert to speech:")
-    speaker_file = st.file_uploader("Upload the speaker file (WAV format):", type=["wav"])
+    speaker_file = st.file_uploader("Upload the speaker file (WAV or MP3 format):", type=["wav", "mp3"])
 
     if st.button("Generate Speech from Text"):
         if text and speaker_file:
