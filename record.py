@@ -123,7 +123,7 @@ def upload_audio(audio_file):
 
         elif audio_file.type == "audio/mpeg":
             # Convert MP3 to WAV
-            audio_data = AudioSegment.from_file(audio_file, format="mp3")
+            audio_data = AudioSegment.from_file(io.BytesIO(audio_file.read()), format="mp3")
             wav_file = io.BytesIO()
             audio_data.export(wav_file, format="wav")
             wav_file.seek(0)
