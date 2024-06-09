@@ -16,11 +16,16 @@ def generate_outline(prompt):
         max_tokens=1024,
         n=1,
         stop=None,
-        temperature=0.7
+        temperature=0.7,
+        stream=True  # Enable streaming
     )
 
-    outline = response.choices[0].message.content.strip()
-    return outline
+    outline = ""
+    for chunk in response:
+        outline += chunk.choices[0].delta.get("content", "")
+        yield outline  # Yield the current outline for progress bar update
+
+    yield outline  # Yield the final outline
 
 def generate_pre_summary(prompt, outline):
     messages = [
@@ -34,11 +39,16 @@ def generate_pre_summary(prompt, outline):
         max_tokens=1024,
         n=1,
         stop=None,
-        temperature=0.7
+        temperature=0.7,
+        stream=True  # Enable streaming
     )
 
-    pre_summary = response.choices[0].message.content.strip()
-    return pre_summary
+    pre_summary = ""
+    for chunk in response:
+        pre_summary += chunk.choices[0].delta.get("content", "")
+        yield pre_summary  # Yield the current pre-summary for progress bar update
+
+    yield pre_summary  # Yield the final pre-summary
 
 def generate_chapters(prompt, outline, pre_summary):
     chapters = []
@@ -58,51 +68,64 @@ def generate_chapters(prompt, outline, pre_summary):
                     max_tokens=1024,
                     n=1,
                     stop=None,
-                    temperature=0.7
+                    temperature=0.7,
+                    stream=True  # Enable streaming
                 )
 
-                chapter_content += response.choices[0].message.content.strip()
+                for chunk in response:
+                    chapter_content += chunk.choices[0].delta.get("content", "")
+                    yield f"Chapter: {chapter_title}\n\n{chapter_content}"  # Yield the current chapter for progress bar update
 
             chapters.append(f"Chapter: {chapter_title}\n\n{chapter_content}")
             previous_chapter_content = chapter_content
 
-    return "\n\n".join(chapters)
+    yield "\n\n".join(chapters)  # Yield the final chapters
 
 def download_file(file_content, file_name):
     b64 = base64.b64encode(file_content.encode()).decode()
     href = f'<a href="data:file/txt;base64,{b64}" download="{file_name}">Download {file_name}</a>'
     return href
 
-def main():
+def app():
     st.title("Book Generation App")
 
     prompt = st.text_area("Enter the book prompt:", height=200)
 
-    outline = None
-    pre_summary = None
-    full_book = None
+    if "outline" not in st.session_state:
+        st.session_state.outline = None
+
+    if "pre_summary" not in st.session_state:
+        st.session_state.pre_summary = None
+
+    if "full_book" not in st.session_state:
+        st.session_state.full_book = None
 
     if st.button("Generate Outline"):
-        outline = generate_outline(prompt)
-        st.write("Outline:")
-        st.write(outline)
+        with st.spinner("Generating outline..."):
+            for output in generate_outline(prompt):
+                st.session_state.outline = output
+                st.write("Outline:")
+                st.write(st.session_state.outline)
 
-    if outline is not None and st.button("Generate Pre-Summary"):
-        pre_summary = generate_pre_summary(prompt, outline)
-        st.write("Pre-Summary:")
-        st.write(pre_summary)
+    if st.session_state.outline is not None and st.button("Generate Pre-Summary"):
+        with st.spinner("Generating pre-summary..."):
+            for output in generate_pre_summary(prompt, st.session_state.outline):
+                st.session_state.pre_summary = output
+                st.write("Pre-Summary:")
+                st.write(st.session_state.pre_summary)
 
     if st.button("Generate Chapters"):
-        if outline is None or pre_summary is None:
+        if st.session_state.outline is None or st.session_state.pre_summary is None:
             st.warning("Please generate an outline and pre-summary first.")
         else:
-            full_book = generate_chapters(prompt, outline, pre_summary)
-            st.write("Chapters:")
-            st.write(full_book)
+            with st.spinner("Generating chapters..."):
+                for output in generate_chapters(prompt, st.session_state.outline, st.session_state.pre_summary):
+                    st.session_state.full_book = output
+                    st.write("Chapters:")
+                    st.write(st.session_state.full_book)
 
-    if full_book is not None:
-        st.markdown(download_file(full_book, "book.txt"), unsafe_allow_html=True)
+    if st.session_state.full_book is not None:
+        st.markdown(download_file(st.session_state.full_book, "book.txt"), unsafe_allow_html=True)
 
 if __name__ == "__main__":
-    main()
-
+    app()
