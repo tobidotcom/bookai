@@ -1,11 +1,10 @@
 import streamlit as st
-from openai import OpenAI
-
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+import openai
 import re
 import base64
 from fpdf import FPDF
 
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 def generate_outline(prompt):
     messages = [
@@ -13,12 +12,14 @@ def generate_outline(prompt):
         {"role": "user", "content": f"Based on the following book prompt, generate a very concise outline for a short ebook of around 10-15 pages: \n\n{prompt}\n\nOutline:"}
     ]
 
-    response = client.chat.completions.create(model="gpt-3.5-turbo",
-    messages=messages,
-    max_tokens=256,
-    n=1,
-    stop=None,
-    temperature=0.7)
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        max_tokens=256,
+        n=1,
+        stop=None,
+        temperature=0.7
+    )
 
     outline = response.choices[0].message.content
     return outline
@@ -29,18 +30,20 @@ def generate_pre_summary(prompt, outline):
         {"role": "user", "content": f"Based on the following book prompt and outline, craft a very concise pre-summary for a short ebook of around 10-15 pages: \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary:"}
     ]
 
-    response = client.chat.completions.create(model="gpt-3.5-turbo",
-    messages=messages,
-    max_tokens=256,
-    n=1,
-    stop=None,
-    temperature=0.7)
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        max_tokens=256,
+        n=1,
+        stop=None,
+        temperature=0.7
+    )
 
     pre_summary = response.choices[0].message.content
     return pre_summary
 
 def generate_chapters(prompt, outline, pre_summary):
-    chapters = []
+    full_book = ""
     previous_chapter_content = ""
     chapter_titles = re.split(r'Chapter\s*\d*:\s*', outline)
 
@@ -52,18 +55,20 @@ def generate_chapters(prompt, outline, pre_summary):
                 {"role": "user", "content": f"Based on the following book prompt, outline, pre-summary, and previous chapter content, generate a very concise chapter for a short ebook of around 10-15 pages titled '{chapter_title}': \n\nPrompt: {prompt}\n\nOutline: {outline}\n\nPre-summary: {pre_summary}\n\nPrevious Chapter Content: {previous_chapter_content}\n\nChapter Content:"}
             ]
 
-            response = client.chat.completions.create(model="gpt-3.5-turbo",
-            messages=messages,
-            max_tokens=256,
-            n=1,
-            stop=None,
-            temperature=0.7)
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=messages,
+                max_tokens=256,
+                n=1,
+                stop=None,
+                temperature=0.7
+            )
 
             chapter_content = response.choices[0].message.content
-            chapters.append(f"Chapter Title: {chapter_title}\n\n{chapter_content}")
+            full_book += f"Chapter Title: {chapter_title}\n\n{chapter_content}\n\n"
             previous_chapter_content = chapter_content
 
-    return "\n\n".join(chapters)
+    return full_book
 
 def generate_pdf(file_content, file_name):
     pdf = FPDF()
@@ -108,11 +113,9 @@ def app():
         else:
             with st.spinner("Generating chapters..."):
                 st.session_state.full_book = generate_chapters(prompt, st.session_state.outline, st.session_state.pre_summary)
-                st.write("Chapters:")
+                st.write("Full Book:")
                 st.write(st.session_state.full_book)
-
-    if st.session_state.full_book is not None:
-        st.markdown(generate_pdf(st.session_state.full_book, "short_ebook"), unsafe_allow_html=True)
+                st.markdown(generate_pdf(st.session_state.full_book, "short_ebook"), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     app()
