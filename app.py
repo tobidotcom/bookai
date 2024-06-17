@@ -1,7 +1,7 @@
 import streamlit as st
 from openai import OpenAI
 import base64
-from fpdf import FPDF
+import docx2pdf
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
@@ -52,7 +52,7 @@ def generate_chapters(prompt, outline, pre_summary):
             ]
 
             response = client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-3.5-turbo-0125",
                 messages=messages,
                 max_tokens=1024,
                 n=1,
@@ -66,29 +66,27 @@ def generate_chapters(prompt, outline, pre_summary):
 
     return "\n\n".join(chapters)
 
-def generate_pdf(file_content, file_name):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
-    
-    for line in file_content.split('\n'):
-        pdf.multi_cell(0, 10, line)
-    
-    pdf_output = f"{file_name}.pdf"
-    pdf.output(pdf_output)
-    return pdf_output
-
 def download_file(file_content, file_name, file_type="txt"):
-    if file_type == "pdf":
-        pdf_file = generate_pdf(file_content, file_name)
-        with open(pdf_file, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode()
-        href = f'<a href="data:application/octet-stream;base64,{b64}" download="{file_name}.pdf">Download {file_name}.pdf</a>'
+    if file_type == "docx":
+        b64 = base64.b64encode(file_content.encode()).decode()
+        href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{file_name}.docx">Download {file_name}.docx</a>'
     else:
         b64 = base64.b64encode(file_content.encode()).decode()
         href = f'<a href="data:file/txt;base64,{b64}" download="{file_name}.txt">Download {file_name}.txt</a>'
     return href
+
+def convert_to_pdf(file_content, file_name):
+    docx_file = f"{file_name}.docx"
+    with open(docx_file, "wb") as f:
+        f.write(file_content.encode())
+
+    pdf_file = f"{file_name}.pdf"
+    docx2pdf.convert(docx_file, pdf_file)
+
+    with open(pdf_file, "rb") as f:
+        pdf_content = f.read()
+
+    return pdf_content
 
 def app():
     st.title("Book Generation App")
@@ -103,6 +101,9 @@ def app():
 
     if "full_book" not in st.session_state:
         st.session_state.full_book = None
+
+    if "pdf_content" not in st.session_state:
+        st.session_state.pdf_content = None
 
     if st.button("Generate Outline"):
         with st.spinner("Generating outline..."):
@@ -126,7 +127,22 @@ def app():
                 st.write(st.session_state.full_book)
 
     if st.session_state.full_book is not None:
-        st.markdown(download_file(st.session_state.full_book, "book", file_type="pdf"), unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(download_file(st.session_state.full_book, "book", file_type="docx"), unsafe_allow_html=True)
+        with col2:
+            if st.button("Convert to PDF"):
+                with st.spinner("Converting to PDF..."):
+                    st.session_state.pdf_content = convert_to_pdf(st.session_state.full_book, "book")
+                st.success("PDF conversion successful!")
+
+    if st.session_state.pdf_content is not None:
+        st.download_button(
+            label="Download PDF",
+            data=st.session_state.pdf_content,
+            file_name="book.pdf",
+            mime="application/pdf",
+        )
 
 if __name__ == "__main__":
     app()
