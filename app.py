@@ -1,9 +1,8 @@
 import streamlit as st
 from openai import OpenAI
-import requests
+from PyFPDF import FPDF
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-pdfshift_api_key = st.secrets["PDFSHIFT_API_KEY"]
 
 def generate_outline(prompt):
     messages = [
@@ -67,21 +66,22 @@ def generate_chapters(prompt, outline, pre_summary):
     return "\n\n".join(chapters)
 
 def generate_pdf(content):
-    url = "https://api.pdfshift.io/v3/convert/pdf"
-    headers = {"Content-Type": "application/json"}
-    data = {
-        "source": content,
-        "landscape": False,
-        "use_print": False
-    }
+    # Create a new PDF object
+    pdf = FPDF()
 
-    try:
-        response = requests.post(url, auth=("api", pdfshift_api_key), headers=headers, json=data)
-        response.raise_for_status()
-        return response.content
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error generating PDF: {e}")
-        return None
+    # Add a page
+    pdf.add_page()
+
+    # Set the font and size
+    pdf.set_font("Arial", size=12)
+
+    # Write the content to the PDF
+    pdf.multi_cell(0, 10, txt=content)
+
+    # Generate the PDF file
+    pdf_file = pdf.output(dest="S").encode("latin-1")
+
+    return pdf_file
 
 def app():
     st.title("Book Generation App")
