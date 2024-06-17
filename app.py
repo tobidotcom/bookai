@@ -1,9 +1,9 @@
 import streamlit as st
 from openai import OpenAI
-import base64
-import docx2pdf
+import requests
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+pdfshift_api_key = st.secrets["PDFSHIFT_API_KEY"]
 
 def generate_outline(prompt):
     messages = [
@@ -66,27 +66,19 @@ def generate_chapters(prompt, outline, pre_summary):
 
     return "\n\n".join(chapters)
 
-def download_file(file_content, file_name, file_type="txt"):
-    if file_type == "docx":
-        b64 = base64.b64encode(file_content.encode()).decode()
-        href = f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{file_name}.docx">Download {file_name}.docx</a>'
-    else:
-        b64 = base64.b64encode(file_content.encode()).decode()
-        href = f'<a href="data:file/txt;base64,{b64}" download="{file_name}.txt">Download {file_name}.txt</a>'
-    return href
+def generate_pdf(content):
+    url = "https://api.pdfshift.io/v3/convert/pdf"
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "source": content,
+        "landscape": False,
+        "use_print": False
+    }
 
-def convert_to_pdf(file_content, file_name):
-    docx_file = f"{file_name}.docx"
-    with open(docx_file, "wb") as f:
-        f.write(file_content.encode())
+    response = requests.post(url, auth=("api", pdfshift_api_key), headers=headers, json=data)
+    response.raise_for_status()
 
-    pdf_file = f"{file_name}.pdf"
-    docx2pdf.convert(docx_file, pdf_file)
-
-    with open(pdf_file, "rb") as f:
-        pdf_content = f.read()
-
-    return pdf_content
+    return response.content
 
 def app():
     st.title("Book Generation App")
@@ -126,15 +118,10 @@ def app():
                 st.write("Chapters:")
                 st.write(st.session_state.full_book)
 
-    if st.session_state.full_book is not None:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(download_file(st.session_state.full_book, "book", file_type="docx"), unsafe_allow_html=True)
-        with col2:
-            if st.button("Convert to PDF"):
-                with st.spinner("Converting to PDF..."):
-                    st.session_state.pdf_content = convert_to_pdf(st.session_state.full_book, "book")
-                st.success("PDF conversion successful!")
+    if st.session_state.full_book is not None and st.button("Generate PDF"):
+        with st.spinner("Generating PDF..."):
+            st.session_state.pdf_content = generate_pdf(st.session_state.full_book)
+            st.success("PDF generation successful!")
 
     if st.session_state.pdf_content is not None:
         st.download_button(
