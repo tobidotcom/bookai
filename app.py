@@ -1,16 +1,14 @@
-import pdfkit
 import streamlit as st
 from openai import OpenAI
+import base64
+from fpdf import FPDF
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-# Set the path to the wkhtmltopdf binary
-pdfkit_config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
 
 def generate_outline(prompt):
     messages = [
         {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-        {"role": "user", "content": f"Based on the following book prompt, generate a brief 3-chapter outline for the book: \n\n{prompt}\n\nOutline:"}
+        {"role": "user", "content": f"Based on the following book prompt, generate a comprehensive outline for the book: \n\n{prompt}\n\nOutline:"}
     ]
 
     response = client.chat.completions.create(
@@ -63,23 +61,34 @@ def generate_chapters(prompt, outline, pre_summary):
             )
 
             chapter_content = response.choices[0].message.content
-            chapters.append(f"<h2>{chapter_title}</h2>\n{chapter_content}")
+            chapters.append(f"Chapter: {chapter_title}\n\n{chapter_content}")
             previous_chapter_content = chapter_content
 
-    full_book = "\n\n".join(chapters)
-    return full_book
+    return "\n\n".join(chapters)
 
-def convert_to_pdf(content, filename):
-    """
-    Generate a PDF file from the given HTML content.
-    """
-    pdf = pdfkit.from_string(content, False, configuration=pdfkit_config)
-    st.download_button(
-        label=f"Download {filename}",
-        data=pdf,
-        file_name=filename,
-        mime="application/pdf"
-    )
+def generate_pdf(file_content, file_name):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    
+    for line in file_content.split('\n'):
+        pdf.multi_cell(0, 10, line)
+    
+    pdf_output = f"{file_name}.pdf"
+    pdf.output(pdf_output)
+    return pdf_output
+
+def download_file(file_content, file_name, file_type="txt"):
+    if file_type == "pdf":
+        pdf_file = generate_pdf(file_content, file_name)
+        with open(pdf_file, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        href = f'<a href="data:application/octet-stream;base64,{b64}" download="{file_name}.pdf">Download {file_name}.pdf</a>'
+    else:
+        b64 = base64.b64encode(file_content.encode()).decode()
+        href = f'<a href="data:file/txt;base64,{b64}" download="{file_name}.txt">Download {file_name}.txt</a>'
+    return href
 
 def app():
     st.title("Book Generation App")
@@ -117,8 +126,7 @@ def app():
                 st.write(st.session_state.full_book)
 
     if st.session_state.full_book is not None:
-        convert_to_pdf(st.session_state.full_book, "book.pdf")
+        st.markdown(download_file(st.session_state.full_book, "book", file_type="pdf"), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     app()
-
