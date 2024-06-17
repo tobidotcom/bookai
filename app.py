@@ -1,17 +1,18 @@
 import streamlit as st
 from openai import OpenAI
 import base64
+from weasyprint import HTML, CSS
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def generate_outline(prompt):
     messages = [
         {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-        {"role": "user", "content": f"Based on the following book prompt, generate a comprehensive outline for the book: \n\n{prompt}\n\nOutline:"}
+        {"role": "user", "content": f"Based on the following book prompt, generate a brief 3-chapter outline for the book: \n\n{prompt}\n\nOutline:"}
     ]
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-3.5-turbo-0125",
         messages=messages,
         max_tokens=1024,
         n=1,
@@ -29,7 +30,7 @@ def generate_pre_summary(prompt, outline):
     ]
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-3.5-turbo-0125",
         messages=messages,
         max_tokens=1024,
         n=1,
@@ -60,14 +61,18 @@ def generate_chapters(prompt, outline, pre_summary):
             )
 
             chapter_content = response.choices[0].message.content
-            chapters.append(f"Chapter: {chapter_title}\n\n{chapter_content}")
+            chapters.append(f"<h2>{chapter_title}</h2>\n{chapter_content}")
             previous_chapter_content = chapter_content
 
-    return "\n\n".join(chapters)
+    full_book = "\n\n".join(chapters)
+    return full_book
 
-def download_file(file_content, file_name):
-    b64 = base64.b64encode(file_content.encode()).decode()
-    href = f'<a href="data:file/txt;base64,{b64}" download="{file_name}">Download {file_name}</a>'
+def convert_to_pdf(content, filename):
+    html = HTML(string=content)
+    pdf_file = html.write_pdf()
+
+    b64 = base64.b64encode(pdf_file).decode()
+    href = f'<a href="data:application/pdf;base64,{b64}" download="{filename}">Download {filename}</a>'
     return href
 
 def app():
@@ -106,7 +111,9 @@ def app():
                 st.write(st.session_state.full_book)
 
     if st.session_state.full_book is not None:
-        st.markdown(download_file(st.session_state.full_book, "book.txt"), unsafe_allow_html=True)
+        pdf_link = convert_to_pdf(st.session_state.full_book, "book.pdf")
+        st.markdown(pdf_link, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     app()
+
