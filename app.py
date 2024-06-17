@@ -1,9 +1,9 @@
 import streamlit as st
 from openai import OpenAI
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+import re
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
@@ -70,25 +70,12 @@ def generate_chapters(prompt, outline, pre_summary):
 
 def generate_pdf(content):
     # Create a PDF document
-    doc = SimpleDocTemplate("book.pdf", pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+    doc = SimpleDocTemplate("book.pdf", pagesize=letter)
 
     # Get the default styles
     styles = getSampleStyleSheet()
-    heading1_style = styles["Heading1"]
-    heading2_style = styles["Heading2"]
-    heading3_style = styles["Heading3"]
-    body_style = styles["BodyText"]
-
-    # Modify styles
-    heading1_style.fontName = "Helvetica-Bold"
-    heading1_style.fontSize = 20
-    heading2_style.fontName = "Helvetica-Bold"
-    heading2_style.fontSize = 18
-    heading3_style.fontName = "Helvetica-Bold"
-    heading3_style.fontSize = 16
-    body_style.fontName = "Times-Roman"
-    body_style.fontSize = 12
-    body_style.leading = 16  # Line spacing
+    bold_style = styles["BodyText"]
+    bold_style.fontName = "Helvetica-Bold"
 
     # Split the content into lines
     lines = content.split("\n")
@@ -96,17 +83,9 @@ def generate_pdf(content):
     # Create a list of Paragraph objects
     elements = []
     for line in lines:
-        if line.startswith("###"):
-            paragraph = Paragraph(line[4:].strip(), heading3_style)
-            elements.append(PageBreak())  # Add a page break before each level 3 heading
-        elif line.startswith("##"):
-            paragraph = Paragraph(line[3:].strip(), heading2_style)
-            elements.append(PageBreak())  # Add a page break before each level 2 heading
-        elif line.startswith("#"):
-            paragraph = Paragraph(line[2:].strip(), heading1_style)
-            elements.append(PageBreak())  # Add a page break before each level 1 heading
-        else:
-            paragraph = Paragraph(line, body_style)
+        # Remove '**' and apply bold formatting
+        line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
+        paragraph = Paragraph(line, bold_style)
         elements.append(paragraph)
 
     # Build the PDF document
@@ -171,4 +150,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
