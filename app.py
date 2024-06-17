@@ -1,9 +1,11 @@
+import pdfkit
 import streamlit as st
 from openai import OpenAI
-import base64
-from weasyprint import HTML, CSS
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+# Set the path to the wkhtmltopdf binary
+pdfkit_config = pdfkit.configuration(wkhtmltopdf='/usr/bin/wkhtmltopdf')
 
 def generate_outline(prompt):
     messages = [
@@ -68,12 +70,16 @@ def generate_chapters(prompt, outline, pre_summary):
     return full_book
 
 def convert_to_pdf(content, filename):
-    html = HTML(string=content)
-    pdf_file = html.write_pdf()
-
-    b64 = base64.b64encode(pdf_file).decode()
-    href = f'<a href="data:application/pdf;base64,{b64}" download="{filename}">Download {filename}</a>'
-    return href
+    """
+    Generate a PDF file from the given HTML content.
+    """
+    pdf = pdfkit.from_string(content, False, configuration=pdfkit_config)
+    st.download_button(
+        label=f"Download {filename}",
+        data=pdf,
+        file_name=filename,
+        mime="application/pdf"
+    )
 
 def app():
     st.title("Book Generation App")
@@ -111,8 +117,7 @@ def app():
                 st.write(st.session_state.full_book)
 
     if st.session_state.full_book is not None:
-        pdf_link = convert_to_pdf(st.session_state.full_book, "book.pdf")
-        st.markdown(pdf_link, unsafe_allow_html=True)
+        convert_to_pdf(st.session_state.full_book, "book.pdf")
 
 if __name__ == "__main__":
     app()
