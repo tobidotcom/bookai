@@ -1,6 +1,8 @@
 import streamlit as st
 from openai import OpenAI
-from fpdf2 import FPDF
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
@@ -66,20 +68,27 @@ def generate_chapters(prompt, outline, pre_summary):
     return "\n\n".join(chapters)
 
 def generate_pdf(content):
-    # Create a new PDF object
-    pdf = FPDF()
+    # Create a PDF document
+    doc = SimpleDocTemplate("book.pdf", pagesize=letter)
 
-    # Add a page
-    pdf.add_page()
+    # Get the default styles
+    styles = getSampleStyleSheet()
 
-    # Set the font and size
-    pdf.set_font("Arial", size=12)
+    # Split the content into lines
+    lines = content.split("\n")
 
-    # Write the content to the PDF
-    pdf.multi_cell(0, 10, txt=content)
+    # Create a list of Paragraph objects
+    elements = []
+    for line in lines:
+        paragraph = Paragraph(line, styles["BodyText"])
+        elements.append(paragraph)
 
-    # Generate the PDF file
-    pdf_file = pdf.output(dest="S").encode("latin-1")
+    # Build the PDF document
+    doc.build(elements)
+
+    # Read the generated PDF file
+    with open("book.pdf", "rb") as f:
+        pdf_file = f.read()
 
     return pdf_file
 
@@ -136,3 +145,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
