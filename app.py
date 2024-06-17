@@ -75,10 +75,13 @@ def generate_pdf(content):
         "use_print": False
     }
 
-    response = requests.post(url, auth=("api", pdfshift_api_key), headers=headers, json=data)
-    response.raise_for_status()
-
-    return response.content
+    try:
+        response = requests.post(url, auth=("api", pdfshift_api_key), headers=headers, json=data)
+        response.raise_for_status()
+        return response.content
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error generating PDF: {e}")
+        return None
 
 def app():
     st.title("Book Generation App")
