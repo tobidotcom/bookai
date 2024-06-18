@@ -10,13 +10,13 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 def enhance_prompt(prompt):
     messages = [
         {"role": "system", "content": "You are an expert book writer. Your task is to enhance the given book prompt to make it more detailed, specific, and compelling."},
-        {"role": "user", "content": f"Enhance the following book prompt to generate a amazing book prompt you can use to generate the best book possible: {prompt}"}
+        {"role": "user", "content": f"Enhance the following book prompt to generate the best book possible: {prompt}"}
     ]
 
     response = client.chat.completions.create(
         model="gpt-3.5-turbo-0125",
         messages=messages,
-        max_tokens=1024,
+        max_tokens=4096,
         n=1,
         stop=None,
         temperature=0.7
@@ -25,16 +25,16 @@ def enhance_prompt(prompt):
     enhanced_prompt = response.choices[0].message.content
     return enhanced_prompt
 
-def generate_outline(enhanced_prompt):
+def generate_outline(enhanced_prompt, num_chapters):
     messages = [
         {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
-        {"role": "user", "content": f"Based on the following enhanced book prompt, generate a comprehensive outline for the book: \n\n{enhanced_prompt}\n\nOutline:"}
+        {"role": "user", "content": f"Based on the following enhanced book prompt, generate a comprehensive outline for the book with {num_chapters} chapters: \n\n{enhanced_prompt}\n\nOutline:"}
     ]
 
     response = client.chat.completions.create(
         model="gpt-3.5-turbo-0125",
         messages=messages,
-        max_tokens=1024,
+        max_tokens=4096,
         n=1,
         stop=None,
         temperature=0.7
@@ -52,7 +52,7 @@ def generate_pre_summary(prompt, outline):
     response = client.chat.completions.create(
         model="gpt-3.5-turbo-0125",
         messages=messages,
-        max_tokens=1024,
+        max_tokens=4096,
         n=1,
         stop=None,
         temperature=0.7
@@ -163,6 +163,9 @@ def app():
 
     prompt = st.text_area("Enter the book prompt:", height=200)
 
+    # Add a dropdown menu for selecting the number of chapters
+    num_chapters = st.selectbox("Select the number of chapters:", [5, 10, 15, 20, 25, 30])
+
     if "enhanced_prompt" not in st.session_state:
         st.session_state.enhanced_prompt = None
 
@@ -186,7 +189,7 @@ def app():
 
     if st.session_state.enhanced_prompt is not None and st.button("Generate Outline"):
         with st.spinner("Generating outline..."):
-            st.session_state.outline = generate_outline(st.session_state.enhanced_prompt)
+            st.session_state.outline = generate_outline(st.session_state.enhanced_prompt, num_chapters)
             st.write("Outline:")
             st.write(st.session_state.outline)
 
