@@ -1,11 +1,26 @@
 import streamlit as st
 from openai import OpenAI
+import os
+
+openai.api_key = os.environ["OPENAI_API_KEY"]
+
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+def enhance_prompt(prompt):
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt="Enhance the following prompt to be more specific, provide context, and improve its quality:\n\n" + prompt,
+        max_tokens=500,
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+    return response.choices[0].text.strip()
 
 def generate_outline(prompt):
     messages = [
@@ -143,7 +158,10 @@ def generate_pdf(content):
 def app():
     st.title("Book Generation App")
 
-    prompt = st.text_area("Enter the book prompt:", height=200)
+    if "prompt" not in st.session_state:
+        st.session_state.prompt = "Enter your initial prompt here."
+
+    prompt = st.text_area("Enter the book prompt:", value=st.session_state.prompt, height=200)
 
     if "outline" not in st.session_state:
         st.session_state.outline = None
@@ -157,15 +175,21 @@ def app():
     if "pdf_content" not in st.session_state:
         st.session_state.pdf_content = None
 
+    if st.button("Enhance Prompt"):
+        with st.spinner("Enhancing prompt..."):
+            st.session_state.prompt = enhance_prompt(prompt)
+        st.write("Enhanced prompt:")
+        st.write(st.session_state.prompt)
+
     if st.button("Generate Outline"):
         with st.spinner("Generating outline..."):
-            st.session_state.outline = generate_outline(prompt)
+            st.session_state.outline = generate_outline(st.session_state.prompt)
             st.write("Outline:")
             st.write(st.session_state.outline)
 
     if st.session_state.outline is not None and st.button("Generate Pre-Summary"):
         with st.spinner("Generating pre-summary..."):
-            st.session_state.pre_summary = generate_pre_summary(prompt, st.session_state.outline)
+            st.session_state.pre_summary = generate_pre_summary(st.session_state.prompt, st.session_state.outline)
             st.write("Pre-Summary:")
             st.write(st.session_state.pre_summary)
 
@@ -174,7 +198,7 @@ def app():
             st.warning("Please generate an outline and pre-summary first.")
         else:
             with st.spinner("Generating chapters..."):
-                st.session_state.full_book = generate_chapters(prompt, st.session_state.outline, st.session_state.pre_summary)
+                st.session_state.full_book = generate_chapters(st.session_state.prompt, st.session_state.outline, st.session_state.pre_summary)
                 st.write("Chapters:")
                 st.write(st.session_state.full_book)
 
@@ -193,4 +217,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
