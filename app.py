@@ -10,7 +10,7 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 def enhance_prompt(prompt):
     messages = [
         {"role": "system", "content": "You are an expert book writer. Your task is to enhance the given book prompt to make it more detailed, specific, and compelling."},
-        {"role": "user", "content": f"Enhance the following book prompt: {prompt}"}
+        {"role": "user", "content": f"Enhance the following book prompt to generate a amazing book prompt you can use to generate the best book possible: {prompt}"}
     ]
 
     response = client.chat.completions.create(
