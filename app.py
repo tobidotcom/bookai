@@ -4,7 +4,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-import re
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
@@ -79,7 +78,6 @@ def generate_pdf(content):
     heading2_style = styles["Heading2"]
     heading3_style = styles["Heading3"]
     body_style = styles["BodyText"]
-    bold_style = ParagraphStyle('Bold', parent=body_style, fontName='Helvetica-Bold')
 
     # Modify styles
     heading1_style.fontName = "Helvetica-Bold"
@@ -108,15 +106,8 @@ def generate_pdf(content):
             paragraph = Paragraph(line[2:].strip(), heading1_style)
             elements.append(PageBreak())  # Add a page break before each level 1 heading
         else:
-            # Remove the '**' symbols and apply bold style to the text between them
-            line_parts = re.split(r'(\*\*.*?\*\*)', line)
-            paragraph_parts = []
-            for part in line_parts:
-                if part.startswith('**') and part.endswith('**'):
-                    paragraph_parts.append(Paragraph(part[2:-2], bold_style))
-                else:
-                    paragraph_parts.append(Paragraph(part, body_style))
-            elements.extend(paragraph_parts)
+            paragraph = Paragraph(line, body_style)
+        elements.append(paragraph)
 
     # Build the PDF document
     doc.build(elements)
