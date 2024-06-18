@@ -79,6 +79,7 @@ def generate_pdf(content):
     heading3_style = styles["Heading3"]
     heading4_style = styles["Heading4"]
     body_style = styles["BodyText"]
+    bold_style = styles["BodyText"]  # Added bold_style
 
     # Modify styles
     heading1_style.fontName = "Helvetica-Bold"
@@ -92,6 +93,7 @@ def generate_pdf(content):
     body_style.fontName = "Times-Roman"
     body_style.fontSize = 12
     body_style.leading = 16  # Line spacing
+    bold_style.fontName = "Times-Bold"  # Added bold_style
 
     # Split the content into lines
     lines = content.split("\n")
@@ -107,6 +109,8 @@ def generate_pdf(content):
             paragraph = Paragraph(line[3:].strip(), heading2_style)
         elif line.startswith("#"):
             paragraph = Paragraph(line[2:].strip(), heading1_style)
+        elif line.startswith("**") and line.endswith("**"):
+            paragraph = Paragraph(line[2:-2].strip(), bold_style)  # Added bold_style
         else:
             paragraph = Paragraph(line, body_style)
         elements.append(paragraph)
