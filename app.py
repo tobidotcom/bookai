@@ -69,8 +69,8 @@ def generate_chapters(prompt, outline, pre_summary):
     return "\n\n".join(chapters)
 
 def generate_pdf(content):
-    # Replace ** with <b> and </b> tags
-    content = content.replace("**", "<b>").replace("**", "</b>")
+    # Replace ** with <b> and </b> tags, handling uneven number of **
+    content = content.replace("**", "<b>").replace("**", "</b>").replace("**", "")
 
     # Create a PDF document
     doc = SimpleDocTemplate("book.pdf", pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
@@ -174,4 +174,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
