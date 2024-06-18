@@ -111,8 +111,8 @@ def generate_pdf(content):
             # Remove the '**' symbols and apply bold style to the text between them
             line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
             paragraph = Paragraph(line, body_style)
-            paragraph.handleBoldRemote(True)
-            elements.append(paragraph)
+            paragraph_parts = paragraph.split('<b>')
+            elements.extend([Paragraph(part, body_style) if not part.startswith('<b>') else Paragraph(part[3:-4], bold_style) for part in paragraph_parts])
 
     # Build the PDF document
     doc.build(elements)
