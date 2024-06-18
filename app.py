@@ -1,8 +1,8 @@
 import streamlit as st
 from openai import OpenAI
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -98,13 +98,10 @@ def generate_pdf(content):
     for line in lines:
         if line.startswith("###"):
             paragraph = Paragraph(line[4:].strip(), heading3_style)
-            elements.append(PageBreak())  # Add a page break before each level 3 heading
         elif line.startswith("##"):
             paragraph = Paragraph(line[3:].strip(), heading2_style)
-            elements.append(PageBreak())  # Add a page break before each level 2 heading
         elif line.startswith("#"):
             paragraph = Paragraph(line[2:].strip(), heading1_style)
-            elements.append(PageBreak())  # Add a page break before each level 1 heading
         else:
             paragraph = Paragraph(line, body_style)
         elements.append(paragraph)
@@ -171,4 +168,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
