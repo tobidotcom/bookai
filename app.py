@@ -3,6 +3,7 @@ from openai import OpenAI
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+import re
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
@@ -20,6 +21,7 @@ def generate_outline(prompt):
         temperature=0.7
     )
     outline = response.choices[0].message.content
+    outline = re.sub(r'#+\s*', '', outline)  # Remove ### and #### symbols
     return outline
 
 def generate_pre_summary(prompt, outline):
@@ -36,6 +38,7 @@ def generate_pre_summary(prompt, outline):
         temperature=0.7
     )
     pre_summary = response.choices[0].message.content
+    pre_summary = re.sub(r'#+\s*', '', pre_summary)  # Remove ### and #### symbols
     return pre_summary
 
 def generate_chapters(prompt, outline, pre_summary):
@@ -56,6 +59,7 @@ def generate_chapters(prompt, outline, pre_summary):
                 temperature=0.7
             )
             chapter_content = response.choices[0].message.content
+            chapter_content = re.sub(r'#+\s*', '', chapter_content)  # Remove ### and #### symbols
             chapters.append(f"Chapter: {chapter_title}\n\n{chapter_content}")
             previous_chapter_content = chapter_content
     return "\n\n".join(chapters)
