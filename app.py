@@ -77,6 +77,7 @@ def generate_pdf(content):
     heading1_style = styles["Heading1"]
     heading2_style = styles["Heading2"]
     heading3_style = styles["Heading3"]
+    heading4_style = styles["Heading4"]
     body_style = styles["BodyText"]
 
     # Modify styles
@@ -86,6 +87,8 @@ def generate_pdf(content):
     heading2_style.fontSize = 18
     heading3_style.fontName = "Helvetica-Bold"
     heading3_style.fontSize = 16
+    heading4_style.fontName = "Helvetica-Bold"
+    heading4_style.fontSize = 14
     body_style.fontName = "Times-Roman"
     body_style.fontSize = 12
     body_style.leading = 16  # Line spacing
@@ -96,7 +99,9 @@ def generate_pdf(content):
     # Create a list of Paragraph objects
     elements = []
     for line in lines:
-        if line.startswith("###"):
+        if line.startswith("####"):
+            paragraph = Paragraph(line[5:].strip(), heading4_style)
+        elif line.startswith("###"):
             paragraph = Paragraph(line[4:].strip(), heading3_style)
         elif line.startswith("##"):
             paragraph = Paragraph(line[3:].strip(), heading2_style)
@@ -168,3 +173,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
