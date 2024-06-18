@@ -79,7 +79,8 @@ def generate_pdf(content):
     heading3_style = styles["Heading3"]
     heading4_style = styles["Heading4"]
     body_style = styles["BodyText"]
-    bold_style = styles["BodyText"]  # Added bold_style
+    bold_style = styles["BodyText"]
+    bold_style.fontName = "Times-Bold"  # Set the bold font
 
     # Modify styles
     heading1_style.fontName = "Helvetica-Bold"
@@ -93,7 +94,6 @@ def generate_pdf(content):
     body_style.fontName = "Times-Roman"
     body_style.fontSize = 12
     body_style.leading = 16  # Line spacing
-    bold_style.fontName = "Times-Bold"  # Added bold_style
 
     # Split the content into lines
     lines = content.split("\n")
@@ -109,11 +109,28 @@ def generate_pdf(content):
             paragraph = Paragraph(line[3:].strip(), heading2_style)
         elif line.startswith("#"):
             paragraph = Paragraph(line[2:].strip(), heading1_style)
-        elif line.startswith("**") and line.endswith("**"):
-            paragraph = Paragraph(line[2:-2].strip(), bold_style)  # Added bold_style
         else:
-            paragraph = Paragraph(line, body_style)
-        elements.append(paragraph)
+            text = line
+            bold_parts = []
+            normal_parts = []
+            while "**" in text:
+                start = text.find("**")
+                end = text.find("**", start + 2)
+                if end == -1:
+                    normal_parts.append(text[start:])
+                    break
+                normal_parts.append(text[:start])
+                bold_parts.append(Paragraph(text[start + 2:end], bold_style))
+                text = text[end + 2:]
+            normal_parts.append(text)
+            paragraph = []
+            for part in normal_parts:
+                if part:
+                    paragraph.append(Paragraph(part, body_style))
+            for part in bold_parts:
+                paragraph.append(part)
+            if paragraph:
+                elements.extend(paragraph)
 
     # Build the PDF document
     doc.build(elements)
