@@ -103,12 +103,16 @@ def generate_pdf(content):
     for line in lines:
         if line.startswith("####"):
             paragraph = Paragraph(line[5:].strip(), heading4_style)
+            elements.append(paragraph)
         elif line.startswith("###"):
             paragraph = Paragraph(line[4:].strip(), heading3_style)
+            elements.append(paragraph)
         elif line.startswith("##"):
             paragraph = Paragraph(line[3:].strip(), heading2_style)
+            elements.append(paragraph)
         elif line.startswith("#"):
             paragraph = Paragraph(line[2:].strip(), heading1_style)
+            elements.append(paragraph)
         else:
             text = line
             bold_parts = []
@@ -119,18 +123,13 @@ def generate_pdf(content):
                 if end == -1:
                     normal_parts.append(text[start:])
                     break
-                normal_parts.append(text[:start])
+                normal_parts.append(Paragraph(text[:start], body_style))
                 bold_parts.append(Paragraph(text[start + 2:end], bold_style))
                 text = text[end + 2:]
-            normal_parts.append(text)
-            paragraph = []
-            for part in normal_parts:
-                if part:
-                    paragraph.append(Paragraph(part, body_style))
-            for part in bold_parts:
-                paragraph.append(part)
-            if paragraph:
-                elements.extend(paragraph)
+            if text:
+                normal_parts.append(Paragraph(text, body_style))
+            elements.extend(bold_parts)
+            elements.extend(normal_parts)
 
     # Build the PDF document
     doc.build(elements)
