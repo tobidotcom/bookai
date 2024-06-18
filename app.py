@@ -109,10 +109,14 @@ def generate_pdf(content):
             elements.append(PageBreak())  # Add a page break before each level 1 heading
         else:
             # Remove the '**' symbols and apply bold style to the text between them
-            line = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', line)
-            paragraph = Paragraph(line, body_style)
-            paragraph_parts = paragraph.split('<b>')
-            elements.extend([Paragraph(part, body_style) if not part.startswith('<b>') else Paragraph(part[3:-4], bold_style) for part in paragraph_parts])
+            line_parts = re.split(r'(\*\*.*?\*\*)', line)
+            paragraph_parts = []
+            for part in line_parts:
+                if part.startswith('**') and part.endswith('**'):
+                    paragraph_parts.append(Paragraph(part[2:-2], bold_style))
+                else:
+                    paragraph_parts.append(Paragraph(part, body_style))
+            elements.extend(paragraph_parts)
 
     # Build the PDF document
     doc.build(elements)
