@@ -19,7 +19,7 @@ def generate_outline(prompt):
         stop=None,
         temperature=0.7
     )
-    outline = response.choices[0].message.content.replace('#', '')
+    outline = response.choices[0].message.content
     return outline
 
 def generate_pre_summary(prompt, outline):
@@ -35,7 +35,7 @@ def generate_pre_summary(prompt, outline):
         stop=None,
         temperature=0.7
     )
-    pre_summary = response.choices[0].message.content.replace('#', '')
+    pre_summary = response.choices[0].message.content
     return pre_summary
 
 def generate_chapters(prompt, outline, pre_summary):
@@ -55,7 +55,7 @@ def generate_chapters(prompt, outline, pre_summary):
                 stop=None,
                 temperature=0.7
             )
-            chapter_content = response.choices[0].message.content.replace('#', '')
+            chapter_content = response.choices[0].message.content
             chapters.append(f"Chapter: {chapter_title}\n\n{chapter_content}")
             previous_chapter_content = chapter_content
     return "\n\n".join(chapters)
@@ -64,18 +64,24 @@ def generate_pdf(content):
     doc = SimpleDocTemplate("book.pdf", pagesize=letter)
     styles = getSampleStyleSheet()
     
-    # Create a custom style for larger, bold text
-    custom_style = ParagraphStyle(
-        'CustomStyle',
-        parent=styles['BodyText'],
-        fontSize=14,
+    # Create a custom style for larger, bold chapter titles
+    chapter_title_style = ParagraphStyle(
+        'ChapterTitleStyle',
+        parent=styles['Heading1'],
+        fontSize=16,
         fontName='Helvetica-Bold'
     )
+    
+    # Create a style for regular text
+    regular_text_style = styles['BodyText']
     
     lines = content.split("\n")
     elements = []
     for line in lines:
-        paragraph = Paragraph(line, custom_style)
+        if line.startswith("Chapter:"):
+            paragraph = Paragraph(line, chapter_title_style)
+        else:
+            paragraph = Paragraph(line, regular_text_style)
         elements.append(paragraph)
     
     doc.build(elements)
