@@ -1,9 +1,6 @@
 import streamlit as st
 from openai import OpenAI
 import os
-
-openai.api_key = os.environ["OPENAI_API_KEY"]
-
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
@@ -12,14 +9,20 @@ from reportlab.lib.units import inch
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 def enhance_prompt(prompt):
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt="Enhance the following prompt to be more specific, provide context, and improve its quality:\n\n" + prompt,
-        max_tokens=500,
+    messages = [
+        {"role": "system", "content": "You are an expert book writer with a vast knowledge of different genres, topics, and writing styles. Your role is to help generate outlines, summaries, and chapters for books on any subject matter, from fiction to non-fiction, from self-help to academic works. Approach each task with professionalism and expertise, tailoring your language and style to suit the specific genre and topic at hand."},
+        {"role": "user", "content": f"Enhance the following prompt to be more specific, provide context, and improve its quality:\n\n" + prompt,}
+    ]
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo-0125",
+        messages=messages,
+        max_tokens=1024,
         n=1,
         stop=None,
-        temperature=0.7,
-    )
+        temperature=0.7
+        
+        )
     return response.choices[0].text.strip()
 
 def generate_outline(prompt):
