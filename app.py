@@ -1,5 +1,6 @@
 import streamlit as st
 from openai import OpenAI
+import re
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -69,8 +70,8 @@ def generate_chapters(prompt, outline, pre_summary):
     return "\n\n".join(chapters)
 
 def generate_pdf(content):
-    # Replace ** with <b> and </b> tags, handling uneven number of **
-    content = content.replace("**", "<b>").replace("**", "</b>").replace("**", "")
+    # Remove HTML tags from the content
+    content = re.sub(r'<[^>]+>', '', content)
 
     # Create a PDF document
     doc = SimpleDocTemplate("book.pdf", pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
